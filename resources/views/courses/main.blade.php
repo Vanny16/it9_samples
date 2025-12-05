@@ -13,55 +13,52 @@
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+        </div>
     </div>
 
     <section class="content">
         <div class="container-fluid">
     @include('layouts.partials.alerts')
-            <div class="card">
-                <div class="card-header">
-                    <div class="div">
-                        <div class="row">
+          <div class="card">
+  <div class="card-header">
+    <div class="div">
+      <div class="row">
+        <div class="col">
+          <h3 class="card-title">Course List</h3>
+        </div>
 
-                            <div class="col">
-                                <h3 class="card-title">Course List</h3>
-                            </div>
+        <div class="col text-right">
+          <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addCourse">Add Course</button>
+          <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#addUserModal">Add User</button>
 
-                            <div class="col text-right">
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
-                                    data-target="#addCourse">Add Course</button>
+          <!-- NEW: Download button -->
+          <button id="downloadExcel" type="button" class="btn btn-info btn-sm">Download Excel</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-                                <button type="button" class="btn btn-success btn-sm" data-toggle="modal"
-                                    data-target="#addUserModal">Add User</button>
+  <div class="card-body">
+    <table class="table table-bordered table-hover" id="table1">
+      <thead>
+        <tr>
+          <th>Course Name</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach ($course_list as $course)
+          <tr>
+            <td>{{ $course->crsName }}</td>
+            <td>{{ $course->status_name }}</td>
+          </tr>
+        @endforeach
+      </tbody>
+    </table>
+  </div>
+</div>
 
-                            </div>
-                        </div>
-                    </div>
 
-
-
-                </div>
-
-                <div class="card-body">
-                    <table class="table table-bordered table-hover" id="table1">
-                        <thead>
-                            <tr>
-                                <th>Course Name</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($course_list as $course)
-                                <tr>
-                                    <td>{{ $course->crsName }}</td>
-                                    <td>{{ $course->status_name }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
     </section>
 
     <div class="modal fade" id="addCourse" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel"
@@ -134,4 +131,60 @@
             </div>
         </div>
     </div>
+
+    <!-- Put this script at the bottom of the page (or inside a script section) -->
+<script>
+/**
+ * Export table as CSV and trigger download.
+ * Adds a UTF-8 BOM so Excel opens UTF-8 characters correctly.
+ */
+function downloadTableAsCSV(filename = 'table.csv') {
+  const rows = document.querySelectorAll('#table1 tr');
+  const csv = [];
+
+  rows.forEach(row => {
+    const cols = row.querySelectorAll('th, td');
+    const rowData = Array.from(cols).map(col => {
+      // Escape double quotes and wrap field in quotes
+      const text = col.innerText.replace(/"/g, '""');
+      return `"${text}"`;
+    }).join(',');
+    csv.push(rowData);
+  });
+
+  // Prepend BOM for correct Excel/UTF-8 handling
+  const csvContent = '\uFEFF' + csv.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+  // create temporary link to trigger download
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function downloadTableAsXlsHtml(filename = 'table.xls') {
+  const table = document.getElementById('table1').outerHTML;
+  const html = '<html><head><meta charset="UTF-8"></head><body>' + table + '</body></html>';
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel' }); //Binary Large Object stores raw data — text, files, images, PDFs, Excel content, CSV, anything — in a binary format.
+
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('downloadExcel').addEventListener('click', function() {
+
+    downloadTableAsCSV('courses.csv');
+});
+</script>
 @endsection
